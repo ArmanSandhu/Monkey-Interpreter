@@ -7,7 +7,7 @@ import (
 )
 
 // Test the NextToken function.
-func TestNextToken(t *testing.T) {
+func TestNextTokenBasic(t *testing.T) {
 	// Create test string
 	input := `=+(){},;`
 
@@ -22,6 +22,73 @@ func TestNextToken(t *testing.T) {
 		{token.LBRACE, "{"},
 		{token.RBRACE, "}"},
 		{token.COMMA, ","},
+		{token.SEMICOLON, ";"},
+		{token.EOF, ""},
+	}
+
+	lexer := New(input)
+
+	for i, tt := range tests {
+		token := lexer.NextToken()
+		if token.Type != tt.expectedType {
+			t.Fatalf("Tests[%d] - TokenType Wrong! Expected=%q, Got=%q", i, tt.expectedType, token.Type)
+		}
+
+		if token.Literal != tt.expectedLiteral {
+			t.Fatalf("Tests[%d] - Token Literal Wrong! Expected=%q, Got=%q", i, tt.expectedLiteral, token.Literal)
+		}
+	}
+}
+
+func TestNextTokenExtended(t *testing.T) {
+	// Create test string
+	input := `let six = 6;
+	let eight = 8;
+	
+	let add = fn(a, b) {
+		a + b
+	};
+	
+	let result = add(six, eight);`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.LET, "let"},
+		{token.IDENTIFIERS, "six"},
+		{token.ASSIGN, "="},
+		{token.INT, "6"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENTIFIERS, "eight"},
+		{token.ASSIGN, "="},
+		{token.INT, "8"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENTIFIERS, "add"},
+		{token.ASSIGN, "="},
+		{token.FUNCTION, "fn"},
+		{token.LPAREN, "("},
+		{token.IDENTIFIERS, "a"},
+		{token.COMMA, ","},
+		{token.IDENTIFIERS, "b"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.IDENTIFIERS, "a"},
+		{token.PLUS, "+"},
+		{token.IDENTIFIERS, "b"},
+		{token.RBRACE, "}"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENTIFIERS, "result"},
+		{token.ASSIGN, "="},
+		{token.FUNCTION, "add"},
+		{token.LPAREN, "("},
+		{token.IDENTIFIERS, "six"},
+		{token.COMMA, ","},
+		{token.IDENTIFIERS, "eight"},
+		{token.RPAREN, ")"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
