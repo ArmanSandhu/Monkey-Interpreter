@@ -3,12 +3,6 @@ package token
 // This allows us to use many different values as TokenTypes
 type TokenType string
 
-// Token data structure
-type Token struct {
-	Type    TokenType
-	Literal string
-}
-
 // Define the constants we'll need for the Monkey programming language
 const (
 	ILLEGAL = "ILLEGAL"
@@ -19,11 +13,8 @@ const (
 	INT         = "INT"
 
 	// Operators
-	ASSIGN   = "="
-	PLUS     = "+"
-	MINUS    = "-"
-	MULTIPLY = "*"
-	DIVIDE   = "/"
+	ASSIGN = "="
+	PLUS   = "+"
 
 	// Delimiters
 	COMMA     = ","
@@ -38,3 +29,9 @@ const (
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 )
+
+// Token data structure
+type Token struct {
+	Type    TokenType
+	Literal string
+}
