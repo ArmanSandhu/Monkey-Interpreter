@@ -47,7 +47,14 @@ func (lexer *Lexer) NextToken() token.Token {
 	// Based on the current character return the appropriate token
 	switch lexer.ch {
 	case '=':
-		tok = newToken(token.ASSIGN, lexer.ch)
+		if lexer.peekChar() == '=' {
+			firstChar := lexer.ch
+			lexer.readChar()
+			newLiteral := string(firstChar) + string(lexer.ch)
+			tok = token.Token{Type: token.EQ, Literal: newLiteral}
+		} else {
+			tok = newToken(token.ASSIGN, lexer.ch)
+		}
 	case '+':
 		tok = newToken(token.PLUS, lexer.ch)
 	case ',':
@@ -69,7 +76,14 @@ func (lexer *Lexer) NextToken() token.Token {
 	case '/':
 		tok = newToken(token.SLASH, lexer.ch)
 	case '!':
-		tok = newToken(token.BANG, lexer.ch)
+		if lexer.peekChar() == '=' {
+			firstChar := lexer.ch
+			lexer.readChar()
+			newLiteral := string(firstChar) + string(lexer.ch)
+			tok = token.Token{Type: token.NOT_EQ, Literal: newLiteral}
+		} else {
+			tok = newToken(token.BANG, lexer.ch)
+		}
 	case '<':
 		tok = newToken(token.LT, lexer.ch)
 	case '>':
@@ -131,8 +145,20 @@ func (lexer *Lexer) readNumber() string {
 	return lexer.input[currPos:lexer.pos]
 }
 
+// This function skips any existing whitespace
 func (lexer *Lexer) skipWhiteSpace() {
 	for lexer.ch == ' ' || lexer.ch == '\t' || lexer.ch == '\n' || lexer.ch == '\r' {
 		lexer.readChar()
+	}
+}
+
+// This helper function will check for two character operators such as == and !=
+func (lexer *Lexer) peekChar() byte {
+	// check if we've reached the end of our input string
+	if lexer.readPos >= len(lexer.input) {
+		return 0
+	} else {
+		// otherwise return the next pos of the input
+		return lexer.input[lexer.readPos]
 	}
 }
