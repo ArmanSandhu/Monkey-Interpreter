@@ -41,6 +41,9 @@ func (lexer *Lexer) readChar() {
 func (lexer *Lexer) NextToken() token.Token {
 	var tok token.Token
 
+	// Skip any whitespace
+	lexer.skipWhiteSpace()
+
 	// Based on the current character return the appropriate token
 	switch lexer.ch {
 	case '=':
@@ -95,4 +98,10 @@ func (lexer *Lexer) readIdentifier() string {
 		lexer.readChar()
 	}
 	return lexer.input[currPos:lexer.pos]
+}
+
+func (lexer *Lexer) skipWhiteSpace() {
+	for lexer.ch == ' ' || lexer.ch == '\t' || lexer.ch == '\n' || lexer.ch == '\r' {
+		lexer.readChar()
+	}
 }
