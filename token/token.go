@@ -35,3 +35,16 @@ type Token struct {
 	Type    TokenType
 	Literal string
 }
+
+var keywords = map[string]TokenType{
+	"fn":  FUNCTION,
+	"let": LET,
+}
+
+func LookupIdentifier(identifier string) TokenType {
+	// Check if the identifier exists in the keyword map
+	if token, ok := keywords[identifier]; ok {
+		return token
+	}
+	return IDENTIFIERS
+}

@@ -49,7 +49,8 @@ func TestNextTokenExtended(t *testing.T) {
 		a + b
 	};
 	
-	let result = add(six, eight);`
+	let result = add(six, eight);
+	`
 
 	tests := []struct {
 		expectedType    token.TokenType

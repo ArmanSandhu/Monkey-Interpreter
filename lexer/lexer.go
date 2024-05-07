@@ -62,6 +62,14 @@ func (lexer *Lexer) NextToken() token.Token {
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
+	default:
+		if isLetter(lexer.ch) {
+			tok.Literal = lexer.readIdentifier()
+			tok.Type = token.LookupIdentifier(tok.Literal)
+			return tok
+		} else {
+			tok = newToken(token.ILLEGAL, lexer.ch)
+		}
 	}
 
 	// Advance the pointers
@@ -69,7 +77,22 @@ func (lexer *Lexer) NextToken() token.Token {
 	return tok
 }
 
-// This function returns a new Token
+// This helper function returns a new Token
 func newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
+}
+
+// This helper function checks if a byte is a letter
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+// This function reads in an identifier and advances the lexer's position until a non-letter character is encountered
+func (lexer *Lexer) readIdentifier() string {
+	currPos := lexer.pos
+	// if the current character is a letter move forward until a non letter character has been found
+	for isLetter(lexer.ch) {
+		lexer.readChar()
+	}
+	return lexer.input[currPos:lexer.pos]
 }
