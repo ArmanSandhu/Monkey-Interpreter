@@ -70,6 +70,10 @@ func (lexer *Lexer) NextToken() token.Token {
 			tok.Literal = lexer.readIdentifier()
 			tok.Type = token.LookupIdentifier(tok.Literal)
 			return tok
+		} else if isDigit(lexer.ch) {
+			tok.Literal = lexer.readNumber()
+			tok.Type = token.INT
+			return tok
 		} else {
 			tok = newToken(token.ILLEGAL, lexer.ch)
 		}
@@ -90,11 +94,26 @@ func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
 
+// This helper function checks if a byte is a digit
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
+}
+
 // This function reads in an identifier and advances the lexer's position until a non-letter character is encountered
 func (lexer *Lexer) readIdentifier() string {
 	currPos := lexer.pos
-	// if the current character is a letter move forward until a non letter character has been found
+	// If the current character is a letter move forward until a non letter character has been found
 	for isLetter(lexer.ch) {
+		lexer.readChar()
+	}
+	return lexer.input[currPos:lexer.pos]
+}
+
+// This function reads a number and advances the lexer's positions until a non-digit is encountered
+func (lexer *Lexer) readNumber() string {
+	currPos := lexer.pos
+	// If the current character is a digit move forward until a non digit has been found
+	for isDigit(lexer.ch) {
 		lexer.readChar()
 	}
 	return lexer.input[currPos:lexer.pos]

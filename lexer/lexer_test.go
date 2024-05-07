@@ -84,7 +84,7 @@ func TestNextTokenExtended(t *testing.T) {
 		{token.LET, "let"},
 		{token.IDENTIFIERS, "result"},
 		{token.ASSIGN, "="},
-		{token.FUNCTION, "add"},
+		{token.IDENTIFIERS, "add"},
 		{token.LPAREN, "("},
 		{token.IDENTIFIERS, "six"},
 		{token.COMMA, ","},
