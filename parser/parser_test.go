@@ -81,3 +81,35 @@ func testLetStatment(t *testing.T, stmt ast.Statement, name string) bool {
 
 	return true
 }
+
+func TestReturnStatements(t *testing.T) {
+	// Create test string
+	input := `
+	return 5;
+	return 10;
+	return 993322;
+	`
+
+	lxr := lexer.New(input)
+	prsr := New(lxr)
+
+	program := prsr.ParseProgram()
+	checkForParseErrors(t, prsr)
+	if program == nil {
+		t.Fatalf("ParseProgram failed! Returned NIL!")
+	}
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements contains the incorrect amount of statements! Expected 3 but returned %d instead!", len(program.Statements))
+	}
+
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt is not of type *ast.ReturnStatement. Instead received %T", stmt)
+			continue
+		}
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("returnStmt.TokenLiteral() is not 'return'. Instead received '%q'", returnStmt.TokenLiteral())
+		}
+	}
+}

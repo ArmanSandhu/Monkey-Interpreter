@@ -68,6 +68,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
@@ -87,6 +89,21 @@ func (p *Parser) parseLetStatement() ast.Statement {
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
+
+	p.nextToken()
+
+	// Skip expression parsing for now
+	if !p.expectPeek(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+// This function returns a statement basedon encountering a RETURN token.
+func (p *Parser) parseReturnStatement() ast.Statement {
+	// Create a ReturnStatement struct
+	stmt := &ast.ReturnStatement{Token: p.currToken}
 
 	p.nextToken()
 
