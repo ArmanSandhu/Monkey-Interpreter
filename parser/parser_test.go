@@ -384,6 +384,18 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"!(true == true)",
 			"(!(true == true))",
 		},
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
 	}
 
 	for _, tt := range tests {
@@ -675,4 +687,39 @@ func TestFunctionParameterParsing(t *testing.T) {
 			testLiteralExpression(t, function.Parameters[i], identifier)
 		}
 	}
+}
+
+func TestCallExpressionParsing(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5);"
+
+	lxr := lexer.New(input)
+	prsr := New(lxr)
+	program := prsr.ParseProgram()
+	checkForParseErrors(t, prsr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Program does not have enough statements! Expected 1 but got '%d'", len(program.Statements))
+	}
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Program.Statement[0] is not of type ast.ExpressionStatement! Instead received '%T'", program.Statements[0])
+	}
+
+	exp, ok := statement.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("Expression is not of type *ast.CallExpression! Instead received '%T'", statement.Expression)
+	}
+
+	if !testIdentifier(t, exp.Function, "add") {
+		return
+	}
+
+	if len(exp.Arguments) != 3 {
+		t.Fatalf("Call Expression does not have enough arguments! Expected 1 but got '%d'", len(exp.Arguments))
+	}
+
+	testLiteralExpression(t, exp.Arguments[0], 1)
+	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
 }
