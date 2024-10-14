@@ -2,32 +2,33 @@ package evaluator
 
 import (
 	"testing"
+
+	"github.com/armansandhu/monkey_interpreter/lexer"
 	"github.com/armansandhu/monkey_interpreter/object"
 	"github.com/armansandhu/monkey_interpreter/parser"
-	"github.com/armansandhu/monkey_interpreter/lexer"
 )
 
-func TestEvalIntegerExpression(t *testing.T)) {
+func TestEvalIntegerExpression(t *testing.T) {
 	tests := []struct {
-		input		string
-		expected 	int64
+		input    string
+		expected int64
 	}{
-		{"5", 5}
-		{"10", 10}
+		{"5", 5},
+		{"10", 10},
 	}
 
 	for _, tt := range tests {
-		evaluated := testEval(tt.input)
+		evaluated := testEvaluate(tt.input)
 		testIntegerObject(t, evaluated, tt.expected)
 	}
 }
 
-func testEval(input string) object.Object {
-	lxr := lexer.New(tt.input)
-	prsr := New(lxr)
+func testEvaluate(input string) object.Object {
+	lxr := lexer.New(input)
+	prsr := parser.New(lxr)
 	program := prsr.ParseProgram()
 
-	return Eval(program)
+	return Evaluate(program)
 }
 
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {
