@@ -74,6 +74,9 @@ func New(l *lexer.Lexer) *Parser {
 	prsr.registerPrefix(token.INT, prsr.parseIntegerLiteral)
 	prsr.registerPrefix(token.BANG, prsr.parsePrefixExpression)
 	prsr.registerPrefix(token.MINUS, prsr.parsePrefixExpression)
+	prsr.registerPrefix(token.TRUE, prsr.parseBoolean)
+	prsr.registerPrefix(token.FALSE, prsr.parseBoolean)
+	prsr.registerPrefix(token.LPAREN, prsr.parseGroupedExpression)
 
 	// Initialize the infix parse map and register parsing functions for all the infix operators
 	prsr.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -132,7 +135,7 @@ func (p *Parser) parseStatement() ast.Statement {
 }
 
 // This function returns a statement based on encountering a LET token.
-func (p *Parser) parseLetStatement() ast.Statement {
+func (p *Parser) parseLetStatement() *ast.LetStatement {
 	// Create a LetStatement struct
 	stmt := &ast.LetStatement{Token: p.currToken}
 
@@ -148,8 +151,10 @@ func (p *Parser) parseLetStatement() ast.Statement {
 
 	p.nextToken()
 
+	stmt.Value = p.parseExpression(LOWEST)
+
 	// Skip expression parsing for now
-	if !p.expectPeek(token.SEMICOLON) {
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -157,14 +162,15 @@ func (p *Parser) parseLetStatement() ast.Statement {
 }
 
 // This function returns a statement based on encountering a RETURN token.
-func (p *Parser) parseReturnStatement() ast.Statement {
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	// Create a ReturnStatement struct
 	stmt := &ast.ReturnStatement{Token: p.currToken}
 
 	p.nextToken()
 
-	// Skip expression parsing for now
-	if !p.expectPeek(token.SEMICOLON) {
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -236,7 +242,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 	leftExp := prefix()
 
-	// We're going to try and find the appropriate infix parse function for the next token as long as the precedence is lower
+	// We're going to try and find the appropriate infix parse function for the next token as long as the precedence is higher
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
@@ -314,6 +320,23 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	precedence := p.currPrecedence()
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
+
+	return expression
+}
+
+// This method parses a boolean
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.currToken, Value: p.currTokenIs(token.TRUE)}
+}
+
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.nextToken()
+
+	expression := p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
 
 	return expression
 }
