@@ -8,11 +8,25 @@ import (
 	"github.com/armansandhu/monkey_interpreter/token"
 )
 
+// Constant's Declaration
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -a or !a
+	CALL        // fn(a)
+)
+
 // Parser data structure:
 // l - pointer to an instance of the lexer
 // currToken - pointer to the current token being processed
 // peekToken - a pointer to the next tken that will be processed
 // errors - a slice containing all the errors encountered as a part of the parsing process - debug only
+// prefixParseFns - a map containing all the prefix parsing functions associated with a TokenType
+// infixParseFns - a map containing all the infix parsing functions associated with a TokenType
 type Parser struct {
 	lxr *lexer.Lexer
 
@@ -20,7 +34,18 @@ type Parser struct {
 	peekToken token.Token
 
 	errors []string
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
+
+// Define the two types of functions needed for implementing a Pratt Parser
+// The prefix parse function will be used for cases where an expression has a prefix operator
+// The infix parse function handles all other standard expression types such as 5 + 5
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
+)
 
 // This function takes in a lexer struct, creates the parser.
 func New(l *lexer.Lexer) *Parser {
@@ -29,6 +54,10 @@ func New(l *lexer.Lexer) *Parser {
 	// Two tokens are read so that the currToken and peekToken can be set.
 	prsr.nextToken()
 	prsr.nextToken()
+
+	// Initialize the prefix parse map and register a parsing function for identifiers
+	prsr.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	prsr.registerPrefix(token.IDENTIFIERS, prsr.parseIdentifier)
 
 	return prsr
 }
@@ -71,7 +100,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -100,7 +129,7 @@ func (p *Parser) parseLetStatement() ast.Statement {
 	return stmt
 }
 
-// This function returns a statement basedon encountering a RETURN token.
+// This function returns a statement based on encountering a RETURN token.
 func (p *Parser) parseReturnStatement() ast.Statement {
 	// Create a ReturnStatement struct
 	stmt := &ast.ReturnStatement{Token: p.currToken}
@@ -109,6 +138,20 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 
 	// Skip expression parsing for now
 	if !p.expectPeek(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+// This funciton returns an expression statement
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	// Create an ExpressionStatement struct
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -142,4 +185,31 @@ func (p *Parser) Errors() []string {
 func (p *Parser) peekError(token token.TokenType) {
 	msg := fmt.Sprintf("Expected next token to be '%s', instead received '%s'!", token, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
+}
+
+// This helper function helps add entries to our prefix parsing map
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+// This helper function helps add entries to our infix parsing map
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
+
+// This function allows us to parse an expression
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+
+	if prefix == nil {
+		return nil
+	}
+
+	leftExp := prefix()
+
+	return leftExp
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
 }
