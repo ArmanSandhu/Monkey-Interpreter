@@ -15,7 +15,7 @@ var (
 func Evaluate(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evaluateStatements(node.Statements)
+		return evaluateProgram(node.Statements)
 	case *ast.ExpressionStatement:
 		return Evaluate(node.Expression)
 	case *ast.IntegerLiteral:
@@ -30,18 +30,25 @@ func Evaluate(node ast.Node) object.Object {
 		right := Evaluate(node.Right)
 		return evaluateInfixExpression(left, node.Operator, right)
 	case *ast.BlockStatement:
-		return evaluateStatements(node.Statements)
+		return evaluateBlockStatement(node)
 	case *ast.IfExpression:
 		return evaluateIfExpression(node)
+	case *ast.ReturnStatement:
+		value := Evaluate(node.ReturnValue)
+		return &object.ReturnValue{Value: value}
 	}
 	return nil
 }
 
-func evaluateStatements(statements []ast.Statement) object.Object {
+func evaluateProgram(statements []ast.Statement) object.Object {
 	var result object.Object
 
 	for _, statement := range statements {
 		result = Evaluate(statement)
+
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
 	}
 
 	return result
@@ -149,4 +156,18 @@ func isTruthy(obj object.Object) bool {
 	default:
 		return true
 	}
+}
+
+func evaluateBlockStatement(block *ast.BlockStatement) object.Object {
+	var result object.Object
+
+	for _, statement := range block.Statements {
+		result = Evaluate(statement)
+
+		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+			return result
+		}
+	}
+
+	return result
 }
