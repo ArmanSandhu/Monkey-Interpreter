@@ -606,3 +606,73 @@ func TestIfElseExpression(t *testing.T) {
 		return
 	}
 }
+
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	lxr := lexer.New(input)
+	prsr := New(lxr)
+	program := prsr.ParseProgram()
+	checkForParseErrors(t, prsr)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Program does not have enough statements! Expected 1 but got '%d'", len(program.Statements))
+	}
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Program.Statement[0] is not of type ast.ExpressionStatement! Instead received '%T'", program.Statements[0])
+	}
+
+	function, ok := statement.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("Expression is not of type *ast.FunctionLiterals! Instead received '%T'", statement.Expression)
+	}
+
+	if len(function.Parameters) != 2 {
+		t.Fatalf("Incorrect amount of function literal parameters found! Expected 2 but receieved '%d'", len(function.Parameters))
+	}
+
+	testLiteralExpression(t, function.Parameters[0], "x")
+	testLiteralExpression(t, function.Parameters[1], "y")
+
+	if len(function.Body.Statements) != 1 {
+		t.Fatalf("Function Body does not have enough statements! Expected 1 but got '%d'", len(function.Body.Statements))
+	}
+
+	bodyStatement, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Function.Body.Statement[0] is not of type ast.ExpressionStatement! Instead received '%T'", function.Body.Statements[0])
+	}
+
+	testInfixExpression(t, bodyStatement.Expression, "x", "+", "y")
+}
+
+func TestFunctionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{input: "fn() {};", expectedParams: []string{}},
+		{input: "fn(x) {};", expectedParams: []string{"x"}},
+		{input: "fn(x, y, z) {};", expectedParams: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		lxr := lexer.New(tt.input)
+		prsr := New(lxr)
+		program := prsr.ParseProgram()
+		checkForParseErrors(t, prsr)
+
+		statement := program.Statements[0].(*ast.ExpressionStatement)
+		function := statement.Expression.(*ast.FunctionLiteral)
+
+		if len(function.Parameters) != len(tt.expectedParams) {
+			t.Fatalf("Incorrect amount of function literal parameters found! Expected %d but receieved '%d'", len(tt.expectedParams), len(function.Parameters))
+		}
+
+		for i, identifier := range tt.expectedParams {
+			testLiteralExpression(t, function.Parameters[i], identifier)
+		}
+	}
+}
