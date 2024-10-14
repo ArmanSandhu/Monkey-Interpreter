@@ -77,6 +77,7 @@ func New(l *lexer.Lexer) *Parser {
 	prsr.registerPrefix(token.TRUE, prsr.parseBoolean)
 	prsr.registerPrefix(token.FALSE, prsr.parseBoolean)
 	prsr.registerPrefix(token.LPAREN, prsr.parseGroupedExpression)
+	prsr.registerPrefix(token.IF, prsr.parseIfExpression)
 
 	// Initialize the infix parse map and register parsing functions for all the infix operators
 	prsr.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -339,4 +340,56 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	}
 
 	return expression
+}
+
+// This method parses an if expression
+func (p *Parser) parseIfExpression() ast.Expression {
+	expression := &ast.IfExpression{Token: p.currToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken()
+
+	expression.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+
+		expression.Alternative = p.parseBlockStatement()
+	}
+
+	return expression
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.currToken}
+	block.Statements = []ast.Statement{}
+
+	p.nextToken()
+
+	for !p.currTokenIs(token.RBRACE) && !p.currTokenIs(token.EOF) {
+		statement := p.parseStatement()
+		if statement != nil {
+			block.Statements = append(block.Statements, statement)
+		}
+		p.nextToken()
+	}
+
+	return block
 }
