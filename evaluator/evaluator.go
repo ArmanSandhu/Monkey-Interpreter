@@ -62,6 +62,16 @@ func Evaluate(node ast.Node, env *object.Environment) object.Object {
 		parameters := node.Parameters
 		body := node.Body
 		return &object.Function{Parameters: parameters, Body: body}
+	case *ast.CallExpression:
+		function := Evaluate(node.Function, env)
+		if isError(function) {
+			return function
+		}
+		arguments := evaluateExpressions(node.Arguments, env)
+		if len(arguments) == 1 && isError(arguments[0]) {
+			return arguments[0]
+		}
+		return applyFunction(function, arguments)
 	}
 	return nil
 }
@@ -228,4 +238,47 @@ func evaluateIdentifier(i *ast.Identifier, env *object.Environment) object.Objec
 	}
 
 	return value
+}
+
+func evaluateExpressions(expressions []ast.Expression, env *object.Environment) []object.Object {
+	var result []object.Object
+
+	for _, e := range expressions {
+		evaluated := Evaluate(e, env)
+		if isError(evaluated) {
+			return []object.Object{evaluated}
+		}
+		result = append(result, evaluated)
+	}
+
+	return result
+}
+
+func applyFunction(function object.Object, arguments []object.Object) object.Object {
+	fn, ok := function.(*object.Function)
+	if !ok {
+		return newError("Object is not a Function! Received a '%s'", function.Type())
+	}
+
+	extendedEnv := extendFunctionEnv(fn, arguments)
+	evaluated := Evaluate(fn.Body, extendedEnv)
+	return unWrapReturnValue(evaluated)
+}
+
+func extendFunctionEnv(function *object.Function, arguments []object.Object) *object.Environment {
+	environment := object.NewEnclosedEnvironment(function.Env)
+
+	for index, parameter := range function.Parameters {
+		environment.Set(parameter.Value, arguments[index])
+	}
+
+	return environment
+}
+
+func unWrapReturnValue(obj object.Object) object.Object {
+	if returnValue, ok := obj.(*object.ReturnValue); ok {
+		return returnValue.Value
+	}
+
+	return obj
 }
