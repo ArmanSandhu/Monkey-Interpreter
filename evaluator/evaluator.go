@@ -72,6 +72,8 @@ func Evaluate(node ast.Node, env *object.Environment) object.Object {
 			return arguments[0]
 		}
 		return applyFunction(function, arguments)
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	}
 	return nil
 }

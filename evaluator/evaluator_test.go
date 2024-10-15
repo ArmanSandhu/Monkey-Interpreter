@@ -259,6 +259,20 @@ func TestFunctionApplication(t *testing.T) {
 	}
 }
 
+func TestStringLiteral(t *testing.T) {
+	input := `"hello world";`
+
+	evaluated := testEvaluate(input)
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Errorf("Object is not of type String! Instead received '%T' (%+v)", evaluated, evaluated)
+	}
+
+	if str.Value != "hello world" {
+		t.Errorf("String has the incorrect value! It should be 'hello world'. Instead received '%q'", str.Value)
+	}
+}
+
 func testEvaluate(input string) object.Object {
 	lxr := lexer.New(input)
 	prsr := parser.New(lxr)

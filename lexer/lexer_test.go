@@ -316,6 +316,8 @@ func TestNextTokenExtendedTwoCharOperators(t *testing.T) {
 
 	11 == 11;
 	11 != 15;
+	"foobar"
+	"foo bar"
 	`
 
 	tests := []struct {
@@ -394,6 +396,8 @@ func TestNextTokenExtendedTwoCharOperators(t *testing.T) {
 		{token.NOT_EQ, "!="},
 		{token.INT, "15"},
 		{token.SEMICOLON, ";"},
+		{token.STRING, "foobar"},
+		{token.STRING, "foo bar"},
 		{token.EOF, ""},
 	}
 
