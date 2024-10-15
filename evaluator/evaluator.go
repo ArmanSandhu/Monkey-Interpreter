@@ -14,51 +14,59 @@ var (
 	NULL  = &object.Null{}
 )
 
-func Evaluate(node ast.Node) object.Object {
+func Evaluate(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evaluateProgram(node.Statements)
+		return evaluateProgram(node.Statements, env)
 	case *ast.ExpressionStatement:
-		return Evaluate(node.Expression)
+		return Evaluate(node.Expression, env)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
 	case *ast.PrefixExpression:
-		right := Evaluate(node.Right)
+		right := Evaluate(node.Right, env)
 		if isError(right) {
 			return right
 		}
 		return evaluatePrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
-		left := Evaluate(node.Left)
+		left := Evaluate(node.Left, env)
 		if isError(left) {
 			return left
 		}
-		right := Evaluate(node.Right)
+		right := Evaluate(node.Right, env)
 		if isError(right) {
 			return right
 		}
 		return evaluateInfixExpression(left, node.Operator, right)
 	case *ast.BlockStatement:
-		return evaluateBlockStatement(node)
+		return evaluateBlockStatement(node, env)
 	case *ast.IfExpression:
-		return evaluateIfExpression(node)
+		return evaluateIfExpression(node, env)
 	case *ast.ReturnStatement:
-		value := Evaluate(node.ReturnValue)
+		value := Evaluate(node.ReturnValue, env)
 		if isError(value) {
 			return value
 		}
 		return &object.ReturnValue{Value: value}
+	case *ast.LetStatement:
+		value := Evaluate(node.Value, env)
+		if isError(value) {
+			return value
+		}
+		env.Set(node.Name.Value, value)
+	case *ast.Identifier:
+		return evaluateIdentifier(node, env)
 	}
 	return nil
 }
 
-func evaluateProgram(statements []ast.Statement) object.Object {
+func evaluateProgram(statements []ast.Statement, env *object.Environment) object.Object {
 	var result object.Object
 
 	for _, statement := range statements {
-		result = Evaluate(statement)
+		result = Evaluate(statement, env)
 
 		switch result := result.(type) {
 		case *object.ReturnValue:
@@ -152,17 +160,17 @@ func evaluateIntegerInfixExpression(left object.Object, operator string, right o
 	}
 }
 
-func evaluateIfExpression(ie *ast.IfExpression) object.Object {
-	condition := Evaluate(ie.Condition)
+func evaluateIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
+	condition := Evaluate(ie.Condition, env)
 
 	if isError(condition) {
 		return condition
 	}
 
 	if isTruthy(condition) {
-		return Evaluate(ie.Consequence)
+		return Evaluate(ie.Consequence, env)
 	} else if ie.Alternative != nil {
-		return Evaluate(ie.Alternative)
+		return Evaluate(ie.Alternative, env)
 	} else {
 		return NULL
 	}
@@ -181,11 +189,11 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
-func evaluateBlockStatement(block *ast.BlockStatement) object.Object {
+func evaluateBlockStatement(block *ast.BlockStatement, env *object.Environment) object.Object {
 	var result object.Object
 
 	for _, statement := range block.Statements {
-		result = Evaluate(statement)
+		result = Evaluate(statement, env)
 
 		if result != nil {
 			returnType := result.Type()
@@ -207,4 +215,13 @@ func isError(obj object.Object) bool {
 		return obj.Type() == object.ERROR_OBJ
 	}
 	return false
+}
+
+func evaluateIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
+	value, ok := env.Get(i.Value)
+	if !ok {
+		return newError("Identifier Not Found: " + i.Value)
+	}
+
+	return value
 }
