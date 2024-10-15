@@ -140,6 +140,63 @@ func TestReturnStatements(t *testing.T) {
 	}
 }
 
+func TestErrorHandling(t *testing.T) {
+	tests := []struct {
+		input       string
+		expectedMsg string
+	}{
+		{
+			"5 + true;",
+			"Type Mismatch: INTEGER + BOOLEAN",
+		},
+		{
+			"5 + true; 5;",
+			"Type Mismatch: INTEGER + BOOLEAN",
+		},
+		{
+			"-true",
+			"Unknown Operator: -BOOLEAN",
+		},
+		{
+			"true + false;",
+			"Unknown Operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"5; true + false; 5",
+			"Unknown Operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"if (10 > 1) { true + false; }",
+			"Unknown Operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			`
+			if (10 > 1) {
+			if (10 > 1) {
+			return true + false;
+			}
+			return 1;
+			}
+			`,
+			"Unknown Operator: BOOLEAN + BOOLEAN",
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEvaluate(tt.input)
+
+		errorObject, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("Object is not of type Error! Instead received '%T' (%+v)", evaluated, evaluated)
+			continue
+		}
+
+		if errorObject.Message != tt.expectedMsg {
+			t.Errorf("Object has the incorrect error message! Expected '%s' but receieved '%s'", tt.expectedMsg, errorObject.Message)
+		}
+	}
+}
+
 func testEvaluate(input string) object.Object {
 	lxr := lexer.New(input)
 	prsr := parser.New(lxr)

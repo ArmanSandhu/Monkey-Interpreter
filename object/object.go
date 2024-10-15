@@ -9,6 +9,7 @@ const (
 	BOOLEAN_OBJ      = "BOOLEAN"
 	NULL_OBJ         = "NULL"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
+	ERROR_OBJ        = "ERROR"
 )
 
 // every value will be wrapped inside a struct
@@ -44,5 +45,13 @@ type ReturnValue struct {
 	Value Object
 }
 
-func (rv *ReturnValue) Inspect() string  { return rv.Inspect() }
+func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
 func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
+
+// the struct needed to handle internal errors
+type Error struct {
+	Message string
+}
+
+func (e *Error) Inspect() string  { return e.Message }
+func (e *Error) Type() ObjectType { return ERROR_OBJ }
