@@ -217,6 +217,30 @@ func TestLetStatments(t *testing.T) {
 	}
 }
 
+func TestFunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2; }"
+
+	evaluated := testEvaluate(input)
+	function, ok := evaluated.(*object.Function)
+	if !ok {
+		t.Errorf("Object is not of type Function! Instead received '%T' (%+v)", evaluated, evaluated)
+	}
+
+	if len(function.Parameters) != 1 {
+		t.Errorf("Function has the incorrect amount of parameters! Needed 1 but receieved '%d'", len(function.Parameters))
+	}
+
+	if function.Parameters[0].String() != "x" {
+		t.Errorf("Function has an incorrect parameter! Needed 'x' but receieved '%q'", function.Parameters[0])
+	}
+
+	expectedBody := "(x + 2)"
+
+	if function.Body.String() != expectedBody {
+		t.Errorf("Function has an incorrect body! Needed %q but receieved '%q'", expectedBody, function.Body.String())
+	}
+}
+
 func testEvaluate(input string) object.Object {
 	lxr := lexer.New(input)
 	prsr := parser.New(lxr)
