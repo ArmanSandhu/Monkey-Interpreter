@@ -746,3 +746,30 @@ func TestStringLiteralExpression(t *testing.T) {
 		t.Errorf("String Literal Value is not 'hello world'. Instead received '%q'", strLiteral.Value)
 	}
 }
+
+func TestParsingArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	lxr := lexer.New(input)
+	prsr := New(lxr)
+	program := prsr.ParseProgram()
+	checkForParseErrors(t, prsr)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Program.Statement[0] is not of type ast.ExpressionStatement! Instead received '%T'", program.Statements[0])
+	}
+
+	array, ok := statement.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Errorf("Expression is not of type *ast.ArrayLiteral! Instead received '%T'", statement.Expression)
+	}
+
+	if len(array.Elements) != 3 {
+		t.Fatalf("Incorrect amount of Array elements detected! Expected 3 but receieved '%d'", len(array.Elements))
+	}
+
+	testIntegerLiteral(t, array.Elements[0], 1)
+	testInfixExpression(t, array.Elements[1], 2, "*", 2)
+	testInfixExpression(t, array.Elements[2], 3, "+", 3)
+}
