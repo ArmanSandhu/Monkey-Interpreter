@@ -80,6 +80,16 @@ func Evaluate(node ast.Node, env *object.Environment) object.Object {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
+	case *ast.IndexExpression:
+		left := Evaluate(node.Left, env)
+		if isError(left) {
+			return left
+		}
+		index := Evaluate(node.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evaluateIndexExpression(left, index)
 	}
 	return nil
 }
@@ -307,4 +317,25 @@ func unWrapReturnValue(obj object.Object) object.Object {
 	}
 
 	return obj
+}
+
+func evaluateIndexExpression(left, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evaluateArrayIndexExpression(left, index)
+	default:
+		return newError("Index operator is not supported: %s", left.Type())
+	}
+}
+
+func evaluateArrayIndexExpression(array, idx object.Object) object.Object {
+	arrayObject := array.(*object.Array)
+	index := idx.(*object.Integer).Value
+	max := int64(len(arrayObject.Elements) - 1)
+
+	if index < 0 || index > max {
+		return NULL
+	}
+
+	return arrayObject.Elements[index]
 }
