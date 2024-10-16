@@ -19,6 +19,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -a or !a
 	CALL        // fn(a)
+	INDEX
 )
 
 // Precedence Table - associates token types with their precedence
@@ -32,6 +33,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 // Parser data structure:
@@ -94,6 +96,7 @@ func New(l *lexer.Lexer) *Parser {
 	prsr.registerInfix(token.LT, prsr.parseInfixExpression)
 	prsr.registerInfix(token.GT, prsr.parseInfixExpression)
 	prsr.registerInfix(token.LPAREN, prsr.parseCallExpresssion)
+	prsr.registerInfix(token.LBRACKET, prsr.parseIndexExpression)
 
 	return prsr
 }
@@ -485,4 +488,17 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	}
 
 	return list
+}
+
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	expression := &ast.IndexExpression{Token: p.currToken, Left: left}
+
+	p.nextToken()
+	expression.Index = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RBRACKET) {
+		return nil
+	}
+
+	return expression
 }

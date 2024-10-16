@@ -396,6 +396,14 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+		},
 	}
 
 	for _, tt := range tests {
@@ -772,4 +780,31 @@ func TestParsingArrayLiterals(t *testing.T) {
 	testIntegerLiteral(t, array.Elements[0], 1)
 	testInfixExpression(t, array.Elements[1], 2, "*", 2)
 	testInfixExpression(t, array.Elements[2], 3, "+", 3)
+}
+
+func TestParsingIndexExpressions(t *testing.T) {
+	input := "arr[1 + 1]"
+
+	lxr := lexer.New(input)
+	prsr := New(lxr)
+	program := prsr.ParseProgram()
+	checkForParseErrors(t, prsr)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Program.Statement[0] is not of type ast.ExpressionStatement! Instead received '%T'", program.Statements[0])
+	}
+
+	indexExpression, ok := statement.Expression.(*ast.IndexExpression)
+	if !ok {
+		t.Fatalf("Expression is not of type *ast.IndexExpression! Instead received '%T'", statement.Expression)
+	}
+
+	if !testIdentifier(t, indexExpression.Left, "arr") {
+		return
+	}
+
+	if !testInfixExpression(t, indexExpression.Index, 1, "+", 1) {
+		return
+	}
 }
