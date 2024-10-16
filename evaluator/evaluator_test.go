@@ -301,6 +301,19 @@ func TestBuiltInFunctions(t *testing.T) {
 		{`len("hello world")`, 11},
 		{`len(1)`, "Argument to `len` is not supported! Instead received an INTEGER!"},
 		{`len("one", "two")`, "Incorrect number of arguments detected! Only needed 1 but instead received 2!"},
+		{`len([1, 2, 3])`, 3},
+		{`len([])`, 0},
+		{`puts("hello", "world!")`, nil},
+		{`first([1, 2, 3])`, 1},
+		{`first([])`, nil},
+		{`first(1)`, "Argument to `first` must be ARRAY! Instead received an INTEGER"},
+		{`last([1, 2, 3])`, 3},
+		{`last([])`, nil},
+		{`last(1)`, "Argument to `last` must be ARRAY! Instead received an INTEGER"},
+		{`rest([1, 2, 3])`, []int{2, 3}},
+		{`rest([])`, nil},
+		{`push([], 1)`, []int{1}},
+		{`push(1, 1)`, "Argument to `push` must be ARRAY! Instead received an INTEGER"},
 	}
 
 	for _, tt := range tests {
@@ -318,6 +331,21 @@ func TestBuiltInFunctions(t *testing.T) {
 
 			if errorObject.Message != tt.expected {
 				t.Errorf("Object has the incorrect error message! Expected '%s' but receieved '%s'", tt.expected, errorObject.Message)
+			}
+		case []int:
+			array, ok := evaluated.(*object.Array)
+			if !ok {
+				t.Errorf("Object is not of type Array! Instead received '%T' (%+v)", evaluated, evaluated)
+				continue
+			}
+
+			if len(array.Elements) != len(expected) {
+				t.Errorf("Incorrect amount of Array elements detected! Expected '%d but receieved '%d'", len(expected), len(array.Elements))
+				continue
+			}
+
+			for i, expectedElement := range expected {
+				testIntegerObject(t, array.Elements[i], int64(expectedElement))
 			}
 		}
 	}
