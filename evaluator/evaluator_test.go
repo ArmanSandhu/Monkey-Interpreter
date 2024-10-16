@@ -184,6 +184,10 @@ func TestErrorHandling(t *testing.T) {
 			"foobar",
 			"Identifier Not Found: foobar",
 		},
+		{
+			`"Hello" - "World"`,
+			"Unknown Operator: STRING - STRING",
+		},
 	}
 
 	for _, tt := range tests {
@@ -256,6 +260,66 @@ func TestFunctionApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		testIntegerObject(t, testEvaluate(tt.input), tt.expected)
+	}
+}
+
+func TestStringLiteral(t *testing.T) {
+	input := `"hello world";`
+
+	evaluated := testEvaluate(input)
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("Object is not of type String! Instead received '%T' (%+v)", evaluated, evaluated)
+	}
+
+	if str.Value != "hello world" {
+		t.Errorf("String has the incorrect value! It should be 'hello world'. Instead received '%q'", str.Value)
+	}
+}
+
+func TestStringConcatenation(t *testing.T) {
+	input := `"hello" + " " + "world"`
+
+	evaluated := testEvaluate(input)
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("Object is not of type String! Instead received '%T' (%+v)", evaluated, evaluated)
+	}
+
+	if str.Value != "hello world" {
+		t.Errorf("String has the incorrect value! It should be 'hello world'. Instead received '%q'", str.Value)
+	}
+}
+
+func TestBuiltInFunctions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "Argument to `len` is not supported! Instead received an INTEGER!"},
+		{`len("one", "two")`, "Incorrect number of arguments detected! Only needed 1 but instead received 2!"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEvaluate(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errorObject, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Errorf("Object is not of type Error! Instead received '%T' (%+v)", evaluated, evaluated)
+				continue
+			}
+
+			if errorObject.Message != tt.expected {
+				t.Errorf("Object has the incorrect error message! Expected '%s' but receieved '%s'", tt.expected, errorObject.Message)
+			}
+		}
 	}
 }
 
