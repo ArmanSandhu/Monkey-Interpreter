@@ -18,6 +18,7 @@ const (
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
 	STRING_OBJ       = "STRING"
+	BUILTIN_OBJ      = "BUILTIN"
 )
 
 // every value will be wrapped inside a struct
@@ -95,3 +96,12 @@ type String struct {
 
 func (s *String) Inspect() string  { return s.Value }
 func (s *String) Type() ObjectType { return STRING_OBJ }
+
+type BuiltInFunction func(args ...Object) Object
+
+type BuiltIn struct {
+	Function BuiltInFunction
+}
+
+func (b *BuiltIn) Inspect() string  { return "Built-In Function" }
+func (b *BuiltIn) Type() ObjectType { return BUILTIN_OBJ }

@@ -291,6 +291,38 @@ func TestStringConcatenation(t *testing.T) {
 	}
 }
 
+func TestBuiltInFunctions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "Argument to `len` is not supported! Instead received an INTEGER!"},
+		{`len("one", "two")`, "Incorrect number of arguments detected! Only needed 1 but instead received 2!"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEvaluate(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errorObject, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Errorf("Object is not of type Error! Instead received '%T' (%+v)", evaluated, evaluated)
+				continue
+			}
+
+			if errorObject.Message != tt.expected {
+				t.Errorf("Object has the incorrect error message! Expected '%s' but receieved '%s'", tt.expected, errorObject.Message)
+			}
+		}
+	}
+}
+
 func testEvaluate(input string) object.Object {
 	lxr := lexer.New(input)
 	prsr := parser.New(lxr)
