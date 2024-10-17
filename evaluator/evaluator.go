@@ -325,6 +325,8 @@ func evaluateIndexExpression(left, index object.Object) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evaluateArrayIndexExpression(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return evaluateHashIndexExpression(left, index)
 	default:
 		return newError("Index operator is not supported: %s", left.Type())
 	}
@@ -366,4 +368,20 @@ func evaluateHashLiteral(node *ast.HashLiteral, env *object.Environment) object.
 	}
 
 	return &object.Hash{Pairs: pairs}
+}
+
+func evaluateHashIndexExpression(hash, idx object.Object) object.Object {
+	hashObject := hash.(*object.Hash)
+
+	key, ok := idx.(object.Hashable)
+	if !ok {
+		return newError("%s is unusuable as a Hash Key!", idx.Type())
+	}
+
+	pair, ok := hashObject.Pairs[key.HashKey()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
 }
